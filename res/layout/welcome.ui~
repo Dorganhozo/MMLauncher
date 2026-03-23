@@ -293,7 +293,6 @@
                 <property name="border-width">5</property>
                 <property name="use-stock">True</property>
                 <property name="always-show-image">True</property>
-                <signal name="clicked" handler="back" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>
