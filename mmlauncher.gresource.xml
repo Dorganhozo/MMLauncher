@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+	<gresource prefix="/com/minimine/launcher">
+		<file preprocess="xml-stripblanks">layout/welcome.ui</file>
+		<file preprocess="xml-stripblanks">layout/launcher.ui</file>
+		<file>drawables/appicon.png</file>
+	</gresource>
+</gresources>
