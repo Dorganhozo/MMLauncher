@@ -3,9 +3,9 @@ project(MMLauncher C)
 set(CMAKE_BUILD_TYPE Debug)
 
 add_executable(${PROJECT_NAME} 
-	src/app.c
-	src/launcher.c
-	src/launcherwin.c
+	src/main.c
+	src/installerapp.c
+	src/installerappwin.c
 	${CMAKE_CURRENT_BINARY_DIR}/gresource.c
 )
 
@@ -22,10 +22,10 @@ add_custom_command(
 		--target=${CMAKE_CURRENT_BINARY_DIR}/gresource.c
 		--sourcedir=res
 		--generate-source
-		mmlauncher.gresource.xml
-	MAIN_DEPENDENCY mmlauncher.gresource.xml
+		installer.gresource.xml
+	MAIN_DEPENDENCY installer.gresource.xml
 	DEPENDS
-		res/layout/welcome.ui
-		res/layout/launcher.ui
+		res/layout/installer.ui
+		# res/layout/launcher.ui
 )
 # target_link_options(MMLauncher PRIVATE -rdynamic)
