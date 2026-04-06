@@ -9,3 +9,5 @@ G_DECLARE_FINAL_TYPE (InstallerAppWindow, installer_app_window, INSTALLER, WINDO
 
 InstallerAppWindow* installer_app_window_new(InstallerApp* app);
 void installer_app_window_open(InstallerAppWindow* win, GFile* file);
+void installer_set_progress_value(InstallerAppWindow* win, gdouble progress);
+void installer_message(InstallerAppWindow* win, const gchar* message);
