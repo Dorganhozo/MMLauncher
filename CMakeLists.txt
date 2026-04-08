@@ -13,7 +13,12 @@ find_package(PkgConfig REQUIRED)
 
 pkg_search_module(CURL REQUIRED IMPORTED_TARGET libcurl)
 pkg_search_module(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
-target_link_libraries(MMLauncher PRIVATE PkgConfig::GTK PkgConfig::CURL)
+pkg_search_module(ZIP REQUIRED IMPORTED_TARGET libzip)
+target_link_libraries(MMLauncher PRIVATE
+	PkgConfig::GTK 
+	PkgConfig::CURL
+	PkgConfig::ZIP
+)
 
 find_program(GLIB_COMPILE_RESOURCES NAMES glib-compile-resources REQUIRED)
 add_custom_command(
