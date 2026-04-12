@@ -1,11 +1,14 @@
 #include "installerapp.h"
 #include "installerappwin.h"
 #include <asm-generic/fcntl.h>
+#include <asm/fcntl.h>
 #include <curl/curl.h>
 #include <curl/easy.h>
 #include <curl/system.h>
+#include <linux/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 #include <zip.h>
 #include <curl/typecheck-gcc.h>
 #include <gio/gio.h>
@@ -14,6 +17,9 @@
 #include <gtk/gtk.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <zipconf.h>
 
 struct _InstallerApp{
 	GtkApplication parent;
@@ -42,6 +48,18 @@ static size_t download_handler(char* buffer, size_t itemsize, size_t n_items, vo
 	gtk_main_iteration();
 
 	return bytes;
+}
+
+void mkdir_p(const char* path){
+	int status = mkdir(path, S_IRWXU);
+	if(status){
+		char* bar = strrchr(path, '/');
+		if(bar == NULL)return;
+		*bar = '\0';
+		mkdir_p(path);
+		*bar = '/';
+		mkdir(path, S_IRWXU);
+	}
 }
 
 // TODO: O extrair ícone do app, arquivo de entrada desktop em ~/.local/share/
@@ -89,20 +107,81 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 
 	zip = zip_open_from_source(zsource, ZIP_RDONLY, &zerror);
 
+
 	if(zip == NULL){
+		zip_error_init_with_code(&zerror, errorp);
 		g_printerr("zip: %s\n", zip_error_strerror(&zerror));
 		zip_error_fini(&zerror);
 		return;
 	}
 
+
+	if(chdir(g_get_home_dir())){
+		perror("Error entering HOME folder");
+		return;
+	}
+
+	if(mkdir(".jre", S_IRWXU) & chdir(".jre")){
+		perror("Error in JRE folder");
+		return;
+	}
+
+	FILE* output_file;
+	zip_file_t* input_file;
+	mode_t mode;
+
+	zip_uint32_t attrs;
+	zip_uint8_t opsys;
+	uint8_t buffer[1024];
+	int valread;
+
+	enum{
+		FA_RONLY = 0x1,
+		FA_DIRECTORY = 0x10,
+	};
+
 	for(int i=0; i < zip_get_num_entries(zip, ZIP_FL_UNCHANGED); i++){
 		const char* name = zip_get_name(zip, i, ZIP_FL_UNCHANGED);
-		g_print("%s\n", name);
+		zip_file_get_external_attributes(zip, i, ZIP_FL_CENTRAL, &opsys, &attrs);
+		if(attrs & FA_DIRECTORY){
+			mkdir_p(name);
+			continue;
+		}
+
+	
+		if(opsys & ~ZIP_OPSYS_DEFAULT)continue;
+
+		mode = (attrs >> 16) & 0b111111111;
+
+
+		output_file = fopen(name, "wr");
+	
+		if(output_file == NULL){
+			perror(name);
+			continue;
+		}
+
+		input_file = zip_fopen_index(zip, i, ZIP_FL_UNCHANGED);
+
+		while((valread = zip_fread(input_file, buffer, 1024)) > 0){
+			fwrite(buffer, sizeof *buffer, valread, output_file);
+			fflush(output_file);
+		}
+
+		fclose(output_file);
+
+		if(chmod(name, mode)){
+			perror("error changing file mode");
+			continue;
+		}
+
 	}
 
 	fclose(app->download_file);
 
 	zip_close(zip);
+
+	installer_message(app->window, "Java Instalado com sucesso!");
 
 }
 
