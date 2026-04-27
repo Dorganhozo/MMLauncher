@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Name=MML
+Icon=mmlauncher.png
+StartupNotify=true
+Exec=mmlauncher

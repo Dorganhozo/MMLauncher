@@ -36,14 +36,18 @@ static void installer_app_window_init(InstallerAppWindow* win){
 
 // TODO: No penultimo botão coloque deixe escrito install
 static void next(GtkButton* button, InstallerAppWindow* win){
+	const gchar* path;
+	if(!strcmp(*win->current_page, "choose")){
+		GtkFileChooser* chooser = GTK_FILE_CHOOSER(win->choose_path_button);
+		path = gtk_file_chooser_get_filename(chooser);
+		if(path == NULL)return;
+	}
+
+
 	gtk_stack_set_visible_child_full(win->menu_stack, *++win->current_page, GTK_STACK_TRANSITION_TYPE_SLIDE_LEFT);
 
 
 	if(!strcmp(*win->current_page, "loading")){
-		const gchar* path;
-
-		GtkFileChooser* chooser = GTK_FILE_CHOOSER(win->choose_path_button);
-		path = gtk_file_chooser_get_filename(chooser);
 		g_signal_emit(win, signals[START_INSTALLATION], 0, path);
 	}
 
@@ -79,10 +83,9 @@ void installer_set_progress_value(InstallerAppWindow* win, gdouble progress){
 
 void installer_message(InstallerAppWindow* win, const gchar* message){
 	GtkTextBuffer* buffer = gtk_text_view_get_buffer(win->messages_viewer);
-	GtkTextIter end = {};
-	gtk_text_buffer_get_end_iter(buffer, &end);
-	gtk_text_buffer_insert_markup(buffer, &end, message, -1);
+	gtk_text_buffer_insert_at_cursor(buffer, message, -1);
 	gtk_text_buffer_insert_at_cursor(buffer, "\n", 1);
+
 }
 
 static void installer_app_window_class_init(InstallerAppWindowClass* class){

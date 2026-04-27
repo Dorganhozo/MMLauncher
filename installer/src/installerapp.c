@@ -1,5 +1,6 @@
 #include "installerapp.h"
 #include "installerappwin.h"
+#include <asm-generic/errno-base.h>
 #include <asm-generic/fcntl.h>
 #include <asm/fcntl.h>
 #include <curl/curl.h>
@@ -19,6 +20,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <launcher_info.h>
 #include <zipconf.h>
 
 struct _InstallerApp{
@@ -27,9 +29,9 @@ struct _InstallerApp{
 	CURL* curl;
 	InstallerAppWindow* window;
 	GCancellable* setup_cancel;
+	char* progname;
 };
 #define ZULU_JRE_LINK  "https://cdn.azul.com/zulu/bin/zulu8.92.0.21-ca-jre8.0.482-linux_i686.zip"
-
 G_DEFINE_TYPE(InstallerApp, installer_app, GTK_TYPE_APPLICATION);
 static void installer_app_init(InstallerApp* app){}
 
@@ -64,8 +66,11 @@ void mkdir_p(const char* path){
 
 // TODO: O extrair ícone do app, arquivo de entrada desktop em ~/.local/share/
 // Copiar o executvel para o local escolhido
+// Esse medtodo não pode ser executado se existir já a pasta do MMLauncher
 static void start_installation(InstallerAppWindow* win, gpointer data){
 	InstallerApp* app = INSTALLER_APP(gtk_window_get_application(GTK_WINDOW(win)));
+	const gchar* choose_path = data;
+
 	app->curl = curl_easy_init();
 	app->download_file = tmpfile();
 
@@ -127,12 +132,12 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 	}
 
 	FILE* output_file;
-	zip_file_t* input_file;
+	zip_file_t* zinput_file;
 	mode_t mode;
 
 	zip_uint32_t attrs;
 	zip_uint8_t opsys;
-	uint8_t buffer[1024];
+	char buffer[1024];
 	int valread;
 
 	enum{
@@ -148,22 +153,22 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 			continue;
 		}
 
-	
+
 		if(opsys & ~ZIP_OPSYS_DEFAULT)continue;
 
 		mode = (attrs >> 16) & 0b111111111;
 
 
 		output_file = fopen(name, "wr");
-	
+
 		if(output_file == NULL){
 			perror(name);
 			continue;
 		}
 
-		input_file = zip_fopen_index(zip, i, ZIP_FL_UNCHANGED);
+		zinput_file = zip_fopen_index(zip, i, ZIP_FL_UNCHANGED);
 
-		while((valread = zip_fread(input_file, buffer, 1024)) > 0){
+		while((valread = zip_fread(zinput_file, buffer, 1024)) > 0){
 			fwrite(buffer, sizeof *buffer, valread, output_file);
 			fflush(output_file);
 		}
@@ -180,9 +185,116 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 	fclose(app->download_file);
 
 	zip_close(zip);
+	installer_message(win, "Java Instalado com sucesso!");
 
-	installer_message(app->window, "Java Instalado com sucesso!");
+	if(chdir(g_get_home_dir())){
+		perror("No way home");
+		return;
+	}
 
+	mkdir_p((char[]){".local/share/applications"});
+	GError* error;
+
+	GInputStream* ginput_file = g_resources_open_stream("/com/minimine/launcher/texts/mmlauncher.desktop", G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
+
+	if(ginput_file == NULL){
+		fprintf(stderr, "mmlauncher.desktop: %s\n", error->message);
+		return;
+	}
+
+	output_file = fopen(".local/share/applications/mmlauncher.desktop", "wr");
+	if(output_file == NULL){
+		perror("Error creating the desktop entry file");
+		return;
+	}
+	while((valread = g_input_stream_read(ginput_file, buffer, 1024, NULL, NULL)) > 0){
+		fwrite(buffer, sizeof *buffer, valread, output_file);
+		fflush(output_file);
+	}
+
+	fclose(output_file);
+	g_input_stream_close(ginput_file, NULL, NULL);
+
+
+	ginput_file = g_resources_open_stream("/com/minimine/launcher/drawables/appicon.png", G_RESOURCE_LOOKUP_FLAGS_NONE, &error);
+
+	if(ginput_file == NULL){
+		fprintf(stderr, "appicon.png: %s\n", error->message);
+		return;
+	}
+
+	output_file = fopen(".local/share/icons/hicolor/48x48/apps/mmlauncher.png", "wr");
+
+
+	if(output_file == NULL){
+		perror("Error extracting appicon");
+		return;
+	}
+
+	while((valread = g_input_stream_read(ginput_file, buffer, 1024, NULL, NULL)) > 0){
+		fwrite(buffer, sizeof *buffer, valread, output_file);
+		fflush(output_file);
+	}
+
+	fclose(output_file);
+	g_input_stream_close(ginput_file, NULL, NULL);
+
+	if(chdir(choose_path)){
+		perror("Non-existent path");
+		return;
+	}
+
+
+	if(mkdir(".MMLauncher", S_IRWXU) && errno != EEXIST){
+		perror("Error creating MMLauncher folder");
+		return;
+	}
+
+	if(chdir(".MMLauncher")){
+		perror("Non-existent path");
+		return;
+	}
+
+	FILE* input_file = fopen(app->progname, "r");
+	output_file = fopen("start", "wr");
+
+	if(output_file == NULL || zinput_file == NULL){
+		perror("Error extracting launcher");
+		return;
+	}
+
+	fseek(input_file, -CONTENT_SIZE, SEEK_END);
+
+	while ((valread = fread(buffer, sizeof *buffer, 1024, input_file))) {
+		fwrite(buffer, sizeof *buffer, valread, output_file);
+		fflush(output_file);
+	}
+	fclose(output_file);
+	fclose(input_file);
+
+	if(chmod("start", S_IXUSR | S_IRUSR)){
+		perror("Error granting permissions");
+		return;
+	}
+
+	char* binary_path = getenv("PATH");
+	strtok(binary_path, ":");
+
+	char* launcher_path = realpath("start", NULL);
+	if(chdir(binary_path)){
+		free(launcher_path);
+		perror("Error entering the binary path");
+		return;
+	}
+
+	if(symlink(launcher_path, "mmlauncher")){
+		free(launcher_path);
+		perror("Error creating link symbolic");
+		return;
+	}
+
+	free(launcher_path);
+	installer_message(win, "Configuração feito");
 }
 
 static void cancel_installation(InstallerAppWindow* win, gpointer data){
@@ -202,15 +314,14 @@ static void installer_app_activate(GApplication* app){
 	gtk_window_present(GTK_WINDOW(win));
 }
 
-static void installer_app_open(GApplication* app, GFile** files, gint n_files, const gchar* hint){
-	installer_app_activate(app);
-}
 
 static void installer_app_class_init(InstallerAppClass* class){
 	G_APPLICATION_CLASS(class)->activate = installer_app_activate;
-	G_APPLICATION_CLASS(class)->open = installer_app_open;
+	// G_APPLICATION_CLASS(class)->open = installer_app_open;
 }
 
-InstallerApp* installer_app_new(void){
-	return g_object_new(INSTALLER_APP_TYPE, "application-id", "com.minimine.launcher", "flags", G_APPLICATION_HANDLES_OPEN, NULL);
+InstallerApp* installer_app_new(int argc, char* argv[]){
+	InstallerApp* app = g_object_new(INSTALLER_APP_TYPE, "application-id", "com.minimine.launcher", "flags", G_APPLICATION_HANDLES_OPEN, NULL);
+	app->progname = realpath(*argv, *argv);
+	return app;
 }
