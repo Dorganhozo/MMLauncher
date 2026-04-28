@@ -1,0 +1,1 @@
+ rm ~/.local/bin/mmlauncher ~/.local/share/{applications/mmlauncher.desktop,icons} ~/.MMLauncher -rf

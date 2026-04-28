@@ -1,19 +1,43 @@
 #include "launcherapp.h"
 #include "launcherappwin.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <unistd.h>
+#include <curl/curl.h>
 
 struct _LauncherApp{
 	GtkApplication parent;
+	FILE* download_file;
+	CURL* curl;
 };
+
+#define MINIMINE_LINK "https://focadoestudios.netlify.app/pacotes/minimine/minimine.jar"
 
 G_DEFINE_TYPE(LauncherApp, launcher_app, GTK_TYPE_APPLICATION);
 static void launcher_app_init(LauncherApp* app){}
 
-void play_game(GtkButton* button, GApplication* app){
-	// TODO: Baixe a ultima versão do MineMine para a pasta versoes
-	g_print("Starting the GAME!\n");
+static size_t download_handler(char* buffer, size_t itemsize, size_t n_items, void* data){
+	LauncherApp* app = data;
+	size_t bytes = itemsize * n_items;
+	curl_off_t received, length;
+	curl_easy_getinfo(app->curl, CURLINFO_SIZE_DOWNLOAD_T, &received);
+	curl_easy_getinfo(app->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &length);
+
+	if(length < 0)return 0;
+	gdouble progress = (float)received/(float)length;
+
+	fwrite(buffer, sizeof *buffer, bytes, app->download_file);
+
+	gtk_main_iteration();
+	g_print("\r%.2f%%", progress * 100);
+
+	return bytes;
+}
+
+void play_game(GtkButton* button, GApplication* gapp){
+	LauncherApp* app = LAUNCHER_APP(gapp);
 
 	char* java_path = realpath(g_get_home_dir(), NULL);
 
@@ -23,13 +47,42 @@ void play_game(GtkButton* button, GApplication* app){
 	}
 
 	strcat(java_path, "/.jre/zulu8.92.0.21-ca-jre8.0.482-linux_i686/bin/java");
+	struct stat st = {};
+
+	if(stat("versoes/minimine.jar", &st) == -1){
+		if(mkdir("versoes", S_IRWXU)){
+			perror("Error ao criar a pasta versoes");
+			return;
+		}
+		app->curl = curl_easy_init();
+		app->download_file = fopen("versoes/minimine.jar", "wr");
+
+		curl_easy_setopt(app->curl, CURLOPT_URL, MINIMINE_LINK);
+		curl_easy_setopt(app->curl, CURLOPT_WRITEFUNCTION, download_handler);
+		curl_easy_setopt(app->curl, CURLOPT_WRITEDATA, app);
+
+		CURLcode result = curl_easy_perform(app->curl);
+
+
+		if(result != CURLE_OK){
+			curl_easy_cleanup(app->curl);
+			g_printerr("curl: %s\n", curl_easy_strerror(result));
+			return;
+		}
+		fclose(app->download_file);
+
+		g_print("\n");
+	}
+
+
+	g_print("Starting the GAME!\n");
 
 	char* argv[] = {java_path, "-jar", "versoes/minimine.jar"};
 	if(execve(java_path, argv, g_get_environ())){
 		free(java_path);
 		perror("Erro ao inicializar\n");
+		return;
 	}
-	free(java_path);
 
 }
 
