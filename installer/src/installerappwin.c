@@ -99,8 +99,18 @@ static void installer_app_window_class_init(InstallerAppWindowClass* class){
 	gtk_widget_class_bind_template_callback(GTK_WIDGET_CLASS(class), back);
 	gtk_widget_class_bind_template_callback(GTK_WIDGET_CLASS(class), quit_program);
 
-	signals[START_INSTALLATION] = g_signal_new("on_install_launcher", G_TYPE_FROM_CLASS(class), G_SIGNAL_RUN_FIRST|G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, G_TYPE_STRING);
-	signals[CANCEL_INSTALLATION] = g_signal_new("on_cancel_installation", G_TYPE_FROM_CLASS(class), G_SIGNAL_RUN_FIRST|G_SIGNAL_RUN_LAST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
+	signals[START_INSTALLATION] = g_signal_new("on_install_launcher", 
+						G_TYPE_FROM_CLASS(class),
+						G_SIGNAL_RUN_FIRST|G_SIGNAL_RUN_LAST, 
+						0,
+						NULL, NULL, NULL, 
+						G_TYPE_NONE, 1, G_TYPE_STRING);
+	signals[CANCEL_INSTALLATION] = g_signal_new("on_cancel_installation",
+						G_TYPE_FROM_CLASS(class),
+						G_SIGNAL_RUN_FIRST|G_SIGNAL_RUN_LAST,
+						0,
+						NULL, NULL, NULL,
+						G_TYPE_NONE, 0);
 }
 
 InstallerAppWindow* installer_app_window_new(InstallerApp* app){

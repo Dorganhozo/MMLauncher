@@ -64,10 +64,9 @@ void mkdir_p(const char* path){
 	}
 }
 
-// TODO: O extrair ícone do app, arquivo de entrada desktop em ~/.local/share/
-// Copiar o executvel para o local escolhido
-// Esse medtodo não pode ser executado se existir já a pasta do MMLauncher
 static void start_installation(InstallerAppWindow* win, gpointer data){
+	// TODO: Refatore esse codigo
+	// Esse medtodo não pode ser executado se existir já a pasta do MMLauncher
 	InstallerApp* app = INSTALLER_APP(gtk_window_get_application(GTK_WINDOW(win)));
 	const gchar* choose_path = data;
 
@@ -223,6 +222,8 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 		return;
 	}
 
+	mkdir_p((char[]){".local/share/icons/hicolor/48x48/apps/"});
+
 	output_file = fopen(".local/share/icons/hicolor/48x48/apps/mmlauncher.png", "wr");
 
 
@@ -277,8 +278,9 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 		return;
 	}
 
-	char* binary_path = getenv("PATH");
-	strtok(binary_path, ":");
+	char* binary_path = "/usr/local/bin/";
+	// char* binary_path = getenv("PATH");
+	// strtok(binary_path, ":");
 
 	char* launcher_path = realpath("start", NULL);
 	if(chdir(binary_path)){
@@ -298,12 +300,12 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 }
 
 static void cancel_installation(InstallerAppWindow* win, gpointer data){
-	// InstallerApp* app = INSTALLER_APP(gtk_window_get_application(GTK_WINDOW(win)));
-	g_print("Cancelado\n");
+	//TODO: Implementa esse metodo
+	// Utilize GTask e GCancellable
+	// Não precisa ser de imediato
 }
 
 
-// TODO tenta usar g_resources_open_stream()
 static void installer_app_activate(GApplication* app){
 	INSTALLER_APP(app)->window = installer_app_window_new(INSTALLER_APP(app));
 
