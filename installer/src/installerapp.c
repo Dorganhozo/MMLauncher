@@ -31,7 +31,13 @@ struct _InstallerApp{
 	GCancellable* setup_cancel;
 	char* progname;
 };
+
+#ifdef __i686__
 #define ZULU_JRE_LINK  "https://cdn.azul.com/zulu/bin/zulu8.92.0.21-ca-jre8.0.482-linux_i686.zip"
+#else
+#define ZULU_JRE_LINK "https://cdn.azul.com/zulu/bin/zulu8.94.0.17-ca-jre8.0.492-linux_x64.zip"
+#endif
+
 G_DEFINE_TYPE(InstallerApp, installer_app, GTK_TYPE_APPLICATION);
 static void installer_app_init(InstallerApp* app){}
 
@@ -66,7 +72,6 @@ void mkdir_p(const char* path){
 
 static void start_installation(InstallerAppWindow* win, gpointer data){
 	// TODO: Refatore esse codigo
-	
 	if(!system("which mmlauncher > /dev/null")){
 		installer_message(win, "O Lançador já está instalado");
 		return;
@@ -333,7 +338,6 @@ static void installer_app_activate(GApplication* app){
 
 static void installer_app_class_init(InstallerAppClass* class){
 	G_APPLICATION_CLASS(class)->activate = installer_app_activate;
-	// G_APPLICATION_CLASS(class)->open = installer_app_open;
 }
 
 InstallerApp* installer_app_new(int argc, char* argv[]){

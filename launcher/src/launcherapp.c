@@ -46,7 +46,12 @@ void play_game(GtkButton* button, GApplication* gapp){
 		return;
 	}
 
+#ifdef __i686__
 	strcat(java_path, "/.jre/zulu8.92.0.21-ca-jre8.0.482-linux_i686/bin/java");
+#else
+	strcat(java_path, "/.jre/zulu8.94.0.17-ca-jre8.0.492-linux_x64/bin/java");
+#endif
+
 	struct stat st = {};
 
 	if(stat("versoes/minimine.jar", &st) == -1){

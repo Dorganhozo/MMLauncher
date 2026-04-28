@@ -1,2 +1,0 @@
-# MMLauncher
-Lançador do MiniMine
