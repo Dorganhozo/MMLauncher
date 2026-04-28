@@ -66,7 +66,12 @@ void mkdir_p(const char* path){
 
 static void start_installation(InstallerAppWindow* win, gpointer data){
 	// TODO: Refatore esse codigo
-	// Esse medtodo não pode ser executado se existir já a pasta do MMLauncher
+	
+	if(!system("which mmlauncher > /dev/null")){
+		installer_message(win, "O Lançador já está instalado");
+		return;
+	}
+
 	InstallerApp* app = INSTALLER_APP(gtk_window_get_application(GTK_WINDOW(win)));
 	const gchar* choose_path = data;
 
@@ -259,7 +264,7 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 	FILE* input_file = fopen(app->progname, "r");
 	output_file = fopen("start", "wr");
 
-	if(output_file == NULL || zinput_file == NULL){
+	if(output_file == NULL || input_file == NULL){
 		perror("Error extracting launcher");
 		return;
 	}
@@ -278,12 +283,20 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 		return;
 	}
 
-	// TODO: Precisa de sudo! Se outro caminho, por exemplo, ~/.local/bin/
-	char* binary_path = "/usr/local/bin/";
-	// char* binary_path = getenv("PATH");
-	// strtok(binary_path, ":");
-
 	char* launcher_path = realpath("start", NULL);
+	if(launcher_path == NULL){
+		perror("Erro ao encontrar start");
+		return;
+	}
+
+	if(chdir(g_get_home_dir())){
+		free(launcher_path);
+		perror("Error entering HOME folder");
+		return;
+	}
+
+	char* binary_path = ".local/bin";
+
 	if(chdir(binary_path)){
 		free(launcher_path);
 		perror("Error entering the binary path");
@@ -326,5 +339,7 @@ static void installer_app_class_init(InstallerAppClass* class){
 InstallerApp* installer_app_new(int argc, char* argv[]){
 	InstallerApp* app = g_object_new(INSTALLER_APP_TYPE, "application-id", "com.minimine.launcher", "flags", G_APPLICATION_HANDLES_OPEN, NULL);
 	app->progname = realpath(*argv, *argv);
+	if(app->progname == NULL)
+		perror("Erro ao pegar o caminho real");
 	return app;
 }

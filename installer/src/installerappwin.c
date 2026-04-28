@@ -116,7 +116,3 @@ static void installer_app_window_class_init(InstallerAppWindowClass* class){
 InstallerAppWindow* installer_app_window_new(InstallerApp* app){
 	return g_object_new(INSTALLER_APP_WINDOW_TYPE, "application", app, NULL);
 }
-
-void installer_app_window_open(InstallerAppWindow* win, GFile* file){
-
-}

@@ -24,7 +24,6 @@ void play_game(GtkButton* button, GApplication* app){
 
 	strcat(java_path, "/.jre/zulu8.92.0.21-ca-jre8.0.482-linux_i686/bin/java");
 
-	g_print("%s\n", java_path);
 	char* argv[] = {java_path, "-jar", "versoes/minimine.jar"};
 	if(execve(java_path, argv, g_get_environ())){
 		free(java_path);

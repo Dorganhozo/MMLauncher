@@ -5,10 +5,19 @@
 #include <string.h>
 #include <unistd.h>
 
+
 #include "launcherapp.h"
 
 int main(int argc, char* argv[]){
-	char* mmlpath = realpath("/usr/local/bin/mmlauncher", NULL);
+	if(chdir(getenv("HOME"))){
+		perror("Error ao entrar na pasta HOME");
+		return EXIT_FAILURE;
+	}
+	char* mmlpath = realpath(".local/bin/mmlauncher", NULL);
+	if(mmlpath == NULL){
+		perror("Error ao se encontrar no PATH");
+		return EXIT_FAILURE;
+	}
 	
 	*strrchr(mmlpath, '/') = '\0';
 	if(chdir(mmlpath)){
