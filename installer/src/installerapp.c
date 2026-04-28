@@ -278,6 +278,7 @@ static void start_installation(InstallerAppWindow* win, gpointer data){
 		return;
 	}
 
+	// TODO: Precisa de sudo! Se outro caminho, por exemplo, ~/.local/bin/
 	char* binary_path = "/usr/local/bin/";
 	// char* binary_path = getenv("PATH");
 	// strtok(binary_path, ":");
