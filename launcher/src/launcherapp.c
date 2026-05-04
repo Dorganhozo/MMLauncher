@@ -30,7 +30,7 @@ static size_t download_handler(char* buffer, size_t itemsize, size_t n_items, vo
 
 	fwrite(buffer, sizeof *buffer, bytes, app->download_file);
 
-	printf("\r%.2f%%", progress * 100);
+	g_print("\r%.2f%%", progress * 100);
 
 	return bytes;
 }
@@ -38,19 +38,16 @@ static size_t download_handler(char* buffer, size_t itemsize, size_t n_items, vo
 void play_game(GtkButton* button, GApplication* gapp){
 	LauncherApp* app = LAUNCHER_APP(gapp);
 
-	char* java_path = realpath(g_get_home_dir(), NULL);
 
+#ifdef __i686__
+	gchar* java_path = g_build_filename(g_get_home_dir(), ".jre/zulu8.92.0.21-ca-jre8.0.482-linux_i686/bin/java", NULL);
+#else
+	char* java_path = g_build_filename(g_get_home_dir(), ".jre/zulu8.94.0.17-ca-jre8.0.492-linux_x64/bin/java", NULL);
+#endif
 	if(java_path == NULL){
 		perror("Erro ao encontrar java");
 		return;
 	}
-
-#ifdef __i686__
-	strcat(java_path, "/.jre/zulu8.92.0.21-ca-jre8.0.482-linux_i686/bin/java");
-#else
-	strcat(java_path, "/.jre/zulu8.94.0.17-ca-jre8.0.492-linux_x64/bin/java");
-#endif
-
 	struct stat st = {};
 
 	if(stat("versoes/minimine.jar", &st) == -1){
@@ -79,13 +76,11 @@ void play_game(GtkButton* button, GApplication* gapp){
 	}
 
 
-	g_print("Começando o jogo!\n");
 
-	char* argv[] = {java_path, "-jar", "versoes/minimine.jar"};
+	char* argv[] = {java_path, "-jar", "versoes/minimine.jar", NULL};
 	if(execve(java_path, argv, g_get_environ())){
-		free(java_path);
 		perror("Erro ao inicializar\n");
-		return;
+		g_free(java_path);
 	}
 
 }

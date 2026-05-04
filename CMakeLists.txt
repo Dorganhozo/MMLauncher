@@ -10,6 +10,7 @@ pkg_check_modules(LIBS REQUIRED IMPORTED_TARGET libcurl gtk+-3.0 libzip)
 
 set(RESOURCES ${CMAKE_CURRENT_SOURCE_DIR}/res)
 
+# TODO: Faça com que sejam compilados separadamente para a testes
 add_subdirectory(launcher)
 add_subdirectory(installer)
 add_dependencies(installer launcher)

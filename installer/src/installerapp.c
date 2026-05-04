@@ -71,7 +71,7 @@ void mkdir_p(const char* path){
 }
 
 static void start_installation(InstallerAppWindow* win, gpointer data){
-	// TODO: Refatore esse codigo
+	// TODO: Refatore esse codigo utilizando mais o GLib
 	if(!system("which mmlauncher > /dev/null")){
 		installer_message(win, "O Lançador já está instalado");
 		return;
