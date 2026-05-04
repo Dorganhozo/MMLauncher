@@ -13,7 +13,7 @@ struct _LauncherApp{
 	CURL* curl;
 };
 
-#define MINIMINE_LINK "https://focadoestudios.netlify.app/pacotes/minimine/minimine.jar"
+#define MINIMINE_LINK "https://focadoestudios.netlify.app/pacotes/minimine/MiniMine.jar"
 
 G_DEFINE_TYPE(LauncherApp, launcher_app, GTK_TYPE_APPLICATION);
 static void launcher_app_init(LauncherApp* app){}
@@ -26,12 +26,11 @@ static size_t download_handler(char* buffer, size_t itemsize, size_t n_items, vo
 	curl_easy_getinfo(app->curl, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &length);
 
 	if(length < 0)return 0;
-	gdouble progress = (float)received/(float)length;
+	float progress = (float)received/(float)length;
 
 	fwrite(buffer, sizeof *buffer, bytes, app->download_file);
 
-	gtk_main_iteration();
-	g_print("\r%.2f%%", progress * 100);
+	printf("\r%.2f%%", progress * 100);
 
 	return bytes;
 }
@@ -80,7 +79,7 @@ void play_game(GtkButton* button, GApplication* gapp){
 	}
 
 
-	g_print("Starting the GAME!\n");
+	g_print("Começando o jogo!\n");
 
 	char* argv[] = {java_path, "-jar", "versoes/minimine.jar"};
 	if(execve(java_path, argv, g_get_environ())){
